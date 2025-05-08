@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -36,29 +37,50 @@ public class SecurityConfiguration {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
+//    @Bean
+//    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+//        return authenticationConfiguration.getAuthenticationManager();
+//    }
+
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .cors(withDefaults())
+//                .csrf(csrf -> csrf.disable()) // Deshabilitar CSRF para APIs stateless
+//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Aplicación stateless
+//                .authorizeHttpRequests(authorize -> authorize
+//                        .requestMatchers("/api/auth/**").permitAll() // Permitir acceso a endpoints de autenticación
+//                        .requestMatchers(HttpMethod.GET, "/user/info", "/api/foos/**").hasAuthority("SCOPE_read")
+//                        .requestMatchers(HttpMethod.POST, "/api/foos").hasAuthority("SCOPE_write")
+//                        .anyRequest().authenticated() // Todas las demás peticiones requieren autenticación
+//                )
+//                .oauth2ResourceServer(oauth2 -> oauth2
+//                        .jwt(jwt -> jwt.decoder(jwtDecoder())) // Configurar el decodificador de JWT
+//                );
+//
+//        return http.build();
+//    }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
-                .cors(withDefaults())
-                .csrf(csrf -> csrf.disable()) // Deshabilitar CSRF para APIs stateless
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Aplicación stateless
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll() // Permitir acceso a endpoints de autenticación
-                        .requestMatchers(HttpMethod.GET, "/user/info", "/api/foos/**").hasAuthority("SCOPE_read")
-                        .requestMatchers(HttpMethod.POST, "/api/foos").hasAuthority("SCOPE_write")
-                        .anyRequest().authenticated() // Todas las demás peticiones requieren autenticación
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder())) // Configurar el decodificador de JWT
-                );
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+    // Necesario para poder inyectar AuthenticationManager en tu AuthController
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
 
     @Bean
     public JwtDecoder jwtDecoder() {
@@ -69,20 +91,4 @@ public class SecurityConfiguration {
                 .build();
     }
 
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .cors(withDefaults()) // Configura CORS, puedes personalizarlo con: .cors(cors -> cors.configurationSource(customCorsConfigurationSource()))
-//                .authorizeHttpRequests(authorizeRequests ->
-//                        authorizeRequests
-//                                .requestMatchers(HttpMethod.GET, "/user/info", "/api/foos/**").hasAuthority("SCOPE_read")
-//                                .requestMatchers(HttpMethod.POST, "/api/foos").hasAuthority("SCOPE_write")
-//                                .anyRequest().authenticated() // Cualquier otra petición requiere autenticación
-//                )
-//                .oauth2ResourceServer(oauth2ResourceServer ->
-//                        oauth2ResourceServer
-//                                .jwt(withDefaults()) // Configura la validación de JWT, puedes personalizarlo con: .jwt(jwt -> jwt.jwtAuthenticationConverter(customConverter()))
-//                );
-//        return http.build();
-//    }
 }

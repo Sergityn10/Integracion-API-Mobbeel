@@ -1,12 +1,14 @@
 package com.mobbScan_integration.MobbScan;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mobbScan_integration.MobbScan.DTO.OnboardingPayload;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
@@ -30,15 +32,6 @@ public class OnboardingController {
 
     private String accessToken = "";
 
-    private String getAccessToken() {
-        String url = gateway + "/oauth/token";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        String body = String.format("{\"grant_type\":\"client_credentials\",\"client_id\":\"%s\",\"client_secret\":\"%s\"}", apiKey, apiSecret);
-        HttpEntity<String> request = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, request, Map.class);
-        return response.getBody().get("access_token").toString();
-    }
 
     @PostMapping("/authenticate")
     public ResponseEntity<Map> doAuthentication(@RequestBody AuthRequest authRequest) {
@@ -63,8 +56,8 @@ public class OnboardingController {
         );
 
         // Guardar access_token si está presente
-        if (response.getBody() != null && response.getBody().get("access_token") != null) {
-            this.accessToken = response.getBody().get("access_token").toString();
+        if (response.getBody() != null && response.getBody().get("accessToken") != null) {
+            this.accessToken = response.getBody().get("accessToken").toString();
         }
 
         return response;
@@ -72,18 +65,17 @@ public class OnboardingController {
 
     @PostMapping("/create")
     public ResponseEntity<Map> doOnboarding(
-            @RequestBody OnboardingRequest onboardingRequest,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+            @RequestBody OnboardingRequest onboardingRequest
     ) {
+
         String url = gateway + "/onboarding/token";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // Si se proporciona el header Authorization, úsalo. Si no, usa el accessToken almacenado.
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        System.out.println("ACCESS TOKEN: " + accessToken);
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -91,16 +83,24 @@ public class OnboardingController {
             );
         }
 
+
+
         HttpEntity<OnboardingRequest> request = new HttpEntity<>(onboardingRequest, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                request,
-                Map.class
-        );
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
+            return response;
+        } catch (HttpClientErrorException e) {
+            System.out.println("ERROR BODY: " + e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getResponseBodyAsString()));
+        }
 
-        return response;
+
     }
 
 

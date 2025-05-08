@@ -48,5 +48,7 @@ public class OnboardingRequest {
     public void setVerificationExtraData(Map<String, String> verificationExtraData) {
         this.verificationExtraData = verificationExtraData;
     }
+
+
 }
 
