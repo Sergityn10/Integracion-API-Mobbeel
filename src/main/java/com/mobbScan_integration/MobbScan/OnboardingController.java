@@ -82,8 +82,7 @@ public class OnboardingController {
                     Map.of("error", "No Bearer token provided and no stored access token available.")
             );
         }
-
-
+        
 
         HttpEntity<OnboardingRequest> request = new HttpEntity<>(onboardingRequest, headers);
 
@@ -114,11 +113,9 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
-        } else {
+} else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     Map.of("error", "No Bearer token provided and no stored access token available.")
             );
@@ -146,11 +143,9 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
-        } else {
+} else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     Map.of("error", "No Bearer token provided and no stored access token available.")
             );
@@ -180,11 +175,9 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", acceptHeader);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
-        } else {
+} else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
@@ -207,7 +200,6 @@ public class OnboardingController {
     public ResponseEntity<byte[]> getRecording(
             @PathVariable String verificationId,
             @PathVariable RecordingType recordingType,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader
     ) {
         String url = String.format("%s/mobbscan-agent/%s/recording/%s", gateway, verificationId, recordingType.name());
@@ -215,11 +207,9 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", acceptHeader);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
-        } else {
+} else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
@@ -249,11 +239,9 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", acceptHeader);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
+        if (this.accessToken != null) {
             headers.setBearerAuth(this.accessToken);
-        } else {
+} else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
@@ -288,11 +276,10 @@ public class OnboardingController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", acceptHeader);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            headers.set("Authorization", authorizationHeader);
-        } else if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-        } else {
+        if (this.accessToken != null) {
+            headers.setBearerAuth(this.accessToken); 
+        }
+        else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "No Bearer token provided and no stored access token available."));
         }
