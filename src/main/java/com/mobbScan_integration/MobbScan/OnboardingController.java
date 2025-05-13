@@ -1,6 +1,9 @@
 package com.mobbScan_integration.MobbScan;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mobbScan_integration.MobbScan.DTO.AcceptRequest;
+import com.mobbScan_integration.MobbScan.DTO.PendingRequest;
+import com.mobbScan_integration.MobbScan.DTO.RejectRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -110,44 +113,6 @@ public class OnboardingController {
         return response;
     }
 
-//    @PostMapping("/create")
-//    public ResponseEntity<Map> doOnboarding(
-//            @RequestBody OnboardingRequest onboardingRequest
-//    ) {
-//
-//        String url = gateway + "/onboarding/token";
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//        // Si se proporciona el header Authorization, úsalo. Si no, usa el accessToken almacenado.
-//
-//        if (this.accessToken != null) {
-//            headers.setBearerAuth(this.accessToken);
-//        } else {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-//                    Map.of("error", "No Bearer token provided and no stored access token available.")
-//            );
-//        }
-//
-//
-//        HttpEntity<OnboardingRequest> request = new HttpEntity<>(onboardingRequest, headers);
-//
-//        try {
-//            ResponseEntity<Map> response = restTemplate.exchange(
-//                    url,
-//                    HttpMethod.POST,
-//                    request,
-//                    Map.class
-//            );
-//            return response;
-//        } catch (HttpClientErrorException e) {
-//            System.out.println("ERROR BODY: " + e.getResponseBodyAsString());
-//            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getResponseBodyAsString()));
-//        }
-//
-//
-//    }
 @PostMapping("/create")
 public ResponseEntity<Map> doOnboarding(@RequestBody OnboardingRequest onboardingRequest) {
     System.out.println("ACCESS TOKEN: " + accessToken);
@@ -333,7 +298,75 @@ public ResponseEntity<Map> doOnboarding(@RequestBody OnboardingRequest onboardin
         return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
     }
 
-    @DeleteMapping("/deleteVerification/{verificationId}")
+    @PostMapping("/accept")
+    public ResponseEntity<Map> sendToAccept(
+            @RequestBody AcceptRequest acceptRequest
+    ) {
+        String url = gateway + "/mobbscan-agent/accept";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        if (this.accessToken != null) {
+            headers.setBearerAuth(this.accessToken);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("error", "No Bearer token provided and no stored access token available.")
+            );
+        }
+
+        HttpEntity<AcceptRequest> request = new HttpEntity<>(acceptRequest, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
+            return response;
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getResponseBodyAsString()));
+        }
+    }
+
+    @PostMapping("/reject")
+    public ResponseEntity<Map> sendToReject(
+            @RequestBody RejectRequest rejectRequest
+    ) {
+        String url = gateway + "/mobbscan-agent/reject";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+       if (this.accessToken != null) {
+            headers.setBearerAuth(this.accessToken);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("error", "No Bearer token provided and no stored access token available.")
+            );
+        }
+
+        HttpEntity<RejectRequest> request = new HttpEntity<>(rejectRequest, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
+            return response;
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getResponseBodyAsString()));
+        }
+    }
+
+
+
+    @DeleteMapping("/{verificationId}")
     public ResponseEntity<?> deleteVerification(
             @PathVariable String verificationId,
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
@@ -353,54 +386,58 @@ public ResponseEntity<Map> doOnboarding(@RequestBody OnboardingRequest onboardin
         }
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
+        try {
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                url,
-                HttpMethod.DELETE,
-                request,
-                String.class
-        );
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.DELETE,
+                    request,
+                    String.class
+            );
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(response.getHeaders().getContentType());
 
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(response.getHeaders().getContentType());
+            return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
 
-        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
+        }catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getResponseBodyAsString()));
+        }
+
+
     }
 
+    @PostMapping("/pending")
+    public ResponseEntity<Map> sendToPending(
+            @RequestBody PendingRequest pendingRequest
+    ) {
+        String url = gateway + "/mobbscan-agent/pending";
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
+        if (this.accessToken != null) {
+            headers.setBearerAuth(this.accessToken);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("error", "No Bearer token provided and no stored access token available.")
+            );
+        }
 
+        HttpEntity<PendingRequest> request = new HttpEntity<>(pendingRequest, headers);
 
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AcceptRequest {
-        @JsonProperty("personalData")
-        private Map<String, String> personalData;
-        @JsonProperty("type")
-        private String type;
-        @JsonProperty("verificationId")
-        private String verificationId;
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
+            return response;
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("error", e.getResponseBodyAsString()));
+        }
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RejectRequest {
-        @JsonProperty("rejectionComment")
-        private String rejectionComment;
-        @JsonProperty("type")
-        private String type;
-        @JsonProperty("verificationId")
-        private String verificationId;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SendToReviewRequest {
-        @JsonProperty("verificationId")
-        private String verificationId;
-    }
 }
