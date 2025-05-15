@@ -7,6 +7,7 @@ import com.mobbScan_integration.MobbScan.DTO.RejectRequest;
 import com.mobbScan_integration.MobbScan.OnboardingRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -28,6 +29,28 @@ public interface MobbScanClient {
     @GetMapping(value = "/mobbscan-agent/checkVerificationProcessResult/{verificationId}")
     Map<String, Object> checkVerificationResult(@RequestHeader("Authorization") String bearerToken,
                                                 @PathVariable String verificationId);
+    @GetMapping(value = "/mobbscan-agent/{verificationId}/image/{imageType}", produces = MediaType.ALL_VALUE)
+    ResponseEntity<byte[]> getVerificationImage(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable String verificationId,
+            @PathVariable String imageType,
+            @RequestHeader("Accept") String accept
+    );
+
+    @GetMapping(value = "/mobbscan-agent/{verificationId}/recording/{recordingType}", produces = MediaType.ALL_VALUE)
+    ResponseEntity<byte[]> getRecording(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable String verificationId,
+            @PathVariable String recordingType,
+            @RequestHeader("Accept") String accept
+    );
+
+    @GetMapping(value = "/api/zip/{verificationId}", produces = MediaType.ALL_VALUE)
+    ResponseEntity<byte[]> getZip(
+            @RequestHeader("Authorization") String bearerToken,
+            @PathVariable String verificationId,
+            @RequestHeader("Accept") String accept
+    );
 
     @PostMapping(value = "/mobbscan-agent/accept", consumes = MediaType.APPLICATION_JSON_VALUE)
     Map<String, Object> sendToAccept(@RequestHeader("Authorization") String bearerToken,

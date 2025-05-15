@@ -49,6 +49,15 @@ protected void doFilterInternal(HttpServletRequest request,
                                 FilterChain filterChain) throws ServletException, IOException {
 
     String header = request.getHeader("Authorization");
+    String path = request.getRequestURI();
+    if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
+    if (request.getServletPath().startsWith("/api/auth")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
 
     if (header != null && header.startsWith("Bearer ")) {
         String token = header.substring(7);
