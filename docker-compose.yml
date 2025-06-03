@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mobbscan-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mobbscan-network
+  api:
+    build: .
+    container_name: mobbscan-api
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mongo
+
+    environment:
+      - MONGODB_URI=${SPRING_DATA_MONGODB_URI}
+      - MOBBSCAN_API_KEY=${MOBBSCAN_API_KEY}
+      - MOBBSCAN_API_SECRET=${MOBBSCAN_API_SECRET}
+      - MOBBSCAN_API_GATEWAY=${MOBBSCAN_API_GATEWAY}
+    networks:
+      - mobbscan-network
+
+  mongo-express:
+    image: mongo-express
+    container_name: mobbscan-mongo-express
+    restart: always
+    ports:
+      - "8083:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+      - mongo
+    networks:
+      - mobbscan-network
+
+volumes:
+  mongo_data:
+
+networks:
+  mobbscan-network:
+    driver: bridge

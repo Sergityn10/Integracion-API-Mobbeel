@@ -1,25 +1,33 @@
 package com.mobbScan_integration.MobbScan;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import com.mobbScan_integration.MobbScan.Client.MobbScanClient;
+import com.mobbScan_integration.MobbScan.DTO.AcceptRequest;
+import com.mobbScan_integration.MobbScan.DTO.PendingRequest;
+import com.mobbScan_integration.MobbScan.DTO.RejectRequest;
+
+import feign.RequestInterceptor;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/onboarding")
+@RequiredArgsConstructor
 public class OnboardingController {
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private final MobbScanClient mobbScanClient;
 
     @Value("${mobbscan.api.key}")
     private String apiKey;
@@ -31,6 +39,20 @@ public class OnboardingController {
     private String gateway;
 
     private String accessToken = "";
+
+    @PostConstruct
+    public void init() {
+        refreshAccessToken();
+    }
+
+    @Bean
+    public RequestInterceptor mobbScanAuthInterceptor() {
+        return template -> {
+            if (accessToken != null && !accessToken.isEmpty()) {
+                template.header("Authorization", "Bearer " + accessToken);
+            }
+        };
+    }
 
     private ResponseEntity<Map> tryOnboarding(OnboardingRequest onboardingRequest, String token) {
         String url = gateway + "/onboarding/token";
@@ -81,326 +103,125 @@ public class OnboardingController {
 
 
     @PostMapping("/authenticate")
-    public ResponseEntity<Map> doAuthentication(@RequestBody AuthRequest authRequest) {
-        String url = gateway + "/auth/token"; // Asegúrate de que `gateway` tenga el esquema completo https://{GATEWAY-HOST}
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-        // Crea el cuerpo JSON tal como el curl lo hace (ya lo tienes con el DTO)
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("api_key", authRequest.getApi_key());
-        requestBody.put("api_secret", authRequest.getApi_secret());
-
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                request,
-                Map.class
-        );
-
-        // Guardar access_token si está presente
-        if (response.getBody() != null && response.getBody().get("accessToken") != null) {
-            this.accessToken = response.getBody().get("accessToken").toString();
-        }
-
-        return response;
-    }
-
-//    @PostMapping("/create")
-//    public ResponseEntity<Map> doOnboarding(
-//            @RequestBody OnboardingRequest onboardingRequest
-//    ) {
-//
-//        String url = gateway + "/onboarding/token";
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//        // Si se proporciona el header Authorization, úsalo. Si no, usa el accessToken almacenado.
-//
-//        if (this.accessToken != null) {
-//            headers.setBearerAuth(this.accessToken);
-//        } else {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-//                    Map.of("error", "No Bearer token provided and no stored access token available.")
-//            );
-//        }
-//
-//
-//        HttpEntity<OnboardingRequest> request = new HttpEntity<>(onboardingRequest, headers);
-//
-//        try {
-//            ResponseEntity<Map> response = restTemplate.exchange(
-//                    url,
-//                    HttpMethod.POST,
-//                    request,
-//                    Map.class
-//            );
-//            return response;
-//        } catch (HttpClientErrorException e) {
-//            System.out.println("ERROR BODY: " + e.getResponseBodyAsString());
-//            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getResponseBodyAsString()));
-//        }
-//
-//
-//    }
-@PostMapping("/create")
-public ResponseEntity<Map> doOnboarding(@RequestBody OnboardingRequest onboardingRequest) {
-    System.out.println("ACCESS TOKEN: " + accessToken);
-
-    // Intentar operación con el token actual
-    ResponseEntity<Map> response = tryOnboarding(onboardingRequest, this.accessToken);
-
-    // Si fue 401 Unauthorized, entonces el token expiró o es inválido → Reintenta
-    if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-        System.out.println("Token expirado o inválido. Reautenticando...");
-        boolean refreshed = refreshAccessToken();
-        if (refreshed) {
-            System.out.println("Nuevo token obtenido. Reintentando onboarding...");
-            return tryOnboarding(onboardingRequest, this.accessToken);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "No se pudo autenticar con MobbScan."));
+    public ResponseEntity<?> doAuthentication(@RequestBody AuthRequest authRequest) {
+        Map<String, String> body = Map.of("api_key", authRequest.getApi_key(), "api_secret", authRequest.getApi_secret());
+        try {
+            Map<String, Object> response = mobbScanClient.authenticate(body);
+            if (response.containsKey("accessToken")) {
+                this.accessToken = response.get("accessToken").toString();
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
     }
 
-    return response;
-}
+    @PostMapping("/create")
+    public ResponseEntity<?> doOnboarding(@RequestBody OnboardingRequest onboardingRequest) {
+        try {
+            Map<String, Object> response = mobbScanClient.doOnboarding("Bearer " + accessToken, onboardingRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            if (refreshAccessToken()) {
+                try {
+                    Map<String, Object> response = mobbScanClient.doOnboarding("Bearer " + accessToken, onboardingRequest);
+                    return ResponseEntity.ok(response);
+                } catch (Exception retryEx) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Retry failed: " + retryEx.getMessage()));
+                }
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+        }
+    }
 
 
     @GetMapping("/getVerificationProcessData/{verificationId}")
-    public ResponseEntity<Map> getVerificationProcessData(
-            @PathVariable String verificationId
-    ) {
-        String url = gateway + "/mobbscan-agent/getVerificationProcessData/" + verificationId;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-} else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    Map.of("error", "No Bearer token provided and no stored access token available.")
-            );
+    public ResponseEntity<?> getVerificationProcessData(@PathVariable String verificationId) {
+        try {
+            Map<String, Object> response = mobbScanClient.getVerificationData("Bearer " + accessToken, verificationId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                Map.class
-        );
-
-        return response;
     }
 
     @GetMapping("/checkVerificationProcessResult/{verificationId}")
-    public ResponseEntity<Map> checkVerificationProcessResult(
-            @PathVariable String verificationId,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
-    ) {
-        String url = gateway + "/mobbscan-agent/checkVerificationProcessResult/" + verificationId;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-} else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    Map.of("error", "No Bearer token provided and no stored access token available.")
-            );
+    public ResponseEntity<?> checkVerificationProcessResult(@PathVariable String verificationId) {
+        try {
+            Map<String, Object> response = mobbScanClient.checkVerificationResult("Bearer " + accessToken, verificationId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                Map.class
-        );
-
-        return response;
     }
 
     @GetMapping("/getImage/{verificationId}/{imageType}")
-    public ResponseEntity<byte[]> getVerificationImage(
-            @PathVariable String verificationId,
-            @PathVariable ImageType imageType,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
-            @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader
-    ) {
-        String url = String.format("%s/mobbscan-agent/%s/image/%s", gateway, verificationId, imageType.name());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", acceptHeader);
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-} else {
+    public ResponseEntity<byte[]> getVerificationImage(@PathVariable String verificationId, @PathVariable String imageType, @RequestHeader(value = "Accept", defaultValue = "application/json") String accept) {
+        try {
+            return mobbScanClient.getVerificationImage("Bearer " + accessToken, verificationId, imageType, accept);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                byte[].class
-        );
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(response.getHeaders().getContentType());
-
-        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
     }
 
     @GetMapping("/getRecording/{verificationId}/{recordingType}")
-    public ResponseEntity<byte[]> getRecording(
-            @PathVariable String verificationId,
-            @PathVariable RecordingType recordingType,
-            @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader
-    ) {
-        String url = String.format("%s/mobbscan-agent/%s/recording/%s", gateway, verificationId, recordingType.name());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", acceptHeader);
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-} else {
+    public ResponseEntity<byte[]> getRecording(@PathVariable String verificationId, @PathVariable String recordingType, @RequestHeader(value = "Accept", defaultValue = "application/json") String accept) {
+        try {
+            return mobbScanClient.getRecording("Bearer " + accessToken, verificationId, recordingType, accept);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                byte[].class
-        );
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(response.getHeaders().getContentType());
-
-        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
     }
 
     @GetMapping("/getZip/{verificationId}")
-    public ResponseEntity<byte[]> getZip(
-            @PathVariable String verificationId,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
-            @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader
-    ) {
-        String url = String.format("%s/api/zip/%s", gateway, verificationId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", acceptHeader);
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken);
-} else {
+    public ResponseEntity<byte[]> getZip(@PathVariable String verificationId, @RequestHeader(value = "Accept", defaultValue = "application/json") String accept) {
+        try {
+            return mobbScanClient.getZip("Bearer " + accessToken, verificationId, accept);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
+    }
 
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                byte[].class
-        );
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(response.getHeaders().getContentType());
-
-        // Opcional: establecer nombre de archivo si el content-disposition viene en el response del servidor
-        if (response.getHeaders().getContentDisposition() != null) {
-            responseHeaders.setContentDisposition(response.getHeaders().getContentDisposition());
+    @PostMapping("/accept")
+    public ResponseEntity<?> sendToAccept(@RequestBody AcceptRequest acceptRequest) {
+        try {
+            Map<String, Object> response = mobbScanClient.sendToAccept("Bearer " + accessToken, acceptRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-
-        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
     }
 
-    @DeleteMapping("/deleteVerification/{verificationId}")
-    public ResponseEntity<?> deleteVerification(
-            @PathVariable String verificationId,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
-            @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader
-    ) {
-        String url = String.format("%s/mobbscan-agent/api/verification/%s", gateway, verificationId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", acceptHeader);
-
-        if (this.accessToken != null) {
-            headers.setBearerAuth(this.accessToken); 
+    @PostMapping("/reject")
+    public ResponseEntity<?> sendToReject(@RequestBody RejectRequest rejectRequest) {
+        try {
+            Map<String, Object> response = mobbScanClient.sendToReject("Bearer " + accessToken, rejectRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-        else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "No Bearer token provided and no stored access token available."));
+    }
+
+    @PostMapping("/pending")
+    public ResponseEntity<?> sendToPending(@RequestBody PendingRequest pendingRequest) {
+        try {
+            Map<String, Object> response = mobbScanClient.sendToPending("Bearer " + accessToken, pendingRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
+    }
 
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                url,
-                HttpMethod.DELETE,
-                request,
-                String.class
-        );
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(response.getHeaders().getContentType());
-
-        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getStatusCode());
+    @DeleteMapping("/{verificationId}")
+    public ResponseEntity<?> deleteVerification(@PathVariable String verificationId) {
+        try {
+            mobbScanClient.deleteVerification("Bearer " + accessToken, verificationId);
+            return ResponseEntity.ok(Map.of("message", "Deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+        }
     }
 
 
 
-
-
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AcceptRequest {
-        @JsonProperty("personalData")
-        private Map<String, String> personalData;
-        @JsonProperty("type")
-        private String type;
-        @JsonProperty("verificationId")
-        private String verificationId;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RejectRequest {
-        @JsonProperty("rejectionComment")
-        private String rejectionComment;
-        @JsonProperty("type")
-        private String type;
-        @JsonProperty("verificationId")
-        private String verificationId;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SendToReviewRequest {
-        @JsonProperty("verificationId")
-        private String verificationId;
-    }
 }
