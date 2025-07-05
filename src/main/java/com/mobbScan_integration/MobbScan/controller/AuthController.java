@@ -1,23 +1,23 @@
-package com.mobbScan_integration.MobbScan;
+package com.mobbScan_integration.MobbScan.controller;
 
 
-import com.mobbScan_integration.MobbScan.DTO.JwtAuthenticationResponse;
-import com.mobbScan_integration.MobbScan.DTO.LoginRequest;
+import com.mobbScan_integration.MobbScan.DTO.response.JwtAuthenticationResponse;
+import com.mobbScan_integration.MobbScan.DTO.request.LoginRequest;
 import com.mobbScan_integration.MobbScan.Models.JWTToken;
 import com.mobbScan_integration.MobbScan.Models.User;
 import com.mobbScan_integration.MobbScan.Repository.JwtTokenRepository;
-import com.mobbScan_integration.MobbScan.Repository.UserRepository;
 import com.mobbScan_integration.MobbScan.Security.JwtTokenProvider;
 
 
+import com.mobbScan_integration.MobbScan.Service.JwtTokenService;
 import com.mobbScan_integration.MobbScan.Service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,19 +25,20 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-//@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserService userService;
     private final JwtTokenRepository tokenRepository;
+    private final JwtTokenService jwtTokenService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider tokenProvider, UserService userService, JwtTokenRepository tokenRepository) {
+    public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider tokenProvider, UserService userService, JwtTokenRepository tokenRepository, JwtTokenService jwtTokenService) {
         this.authenticationManager = authenticationManager;
         this.tokenProvider = tokenProvider;
         this.userService = userService;
         this.tokenRepository = tokenRepository;
+        this.jwtTokenService = jwtTokenService;
     }
 
     @PostMapping("/register")
@@ -76,7 +77,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
         }
 
-        String token = authHeader.substring(7); // Remove "Bearer "
+        String token = authHeader.substring(7);
 
         boolean valid = tokenProvider.validateToken(token);
         if (!valid) {
@@ -120,6 +121,19 @@ public class AuthController {
                 "userDetails", userDto
         ));
 
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/{apiKey}")
+    public ResponseEntity<?> authenticateApiKey(@PathVariable("apiKey") String apiKey) {
+        User user = jwtTokenService.findUserByApikey(apiKey);
+        System.out.println("user: " + user.getUsername());
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        else{
+            return ResponseEntity.ok(Map.of("user", user));
+        }
     }
 
 }

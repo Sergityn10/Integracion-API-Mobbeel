@@ -1,4 +1,4 @@
-package com.mobbScan_integration.MobbScan.DTO;
+package com.mobbScan_integration.MobbScan.DTO.request;
 
 
 import lombok.AllArgsConstructor;
@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AcceptRequest {
-    private PersonalData personalData;
+public class RejectRequest {
+    private String rejectionComment;
     private String type;
     private String verificationId;
 }
+

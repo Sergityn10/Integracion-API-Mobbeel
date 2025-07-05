@@ -1,5 +1,6 @@
-package com.mobbScan_integration.MobbScan.DTO;
+package com.mobbScan_integration.MobbScan.DTO.request;
 
+import com.mobbScan_integration.MobbScan.DTO.PersonalData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

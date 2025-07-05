@@ -3,6 +3,7 @@ package com.mobbScan_integration.MobbScan.Service;
 
 import com.mobbScan_integration.MobbScan.Models.User;
 import com.mobbScan_integration.MobbScan.Repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +13,15 @@ import javax.swing.text.html.Option;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenService jwtTokenService;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+                       BCryptPasswordEncoder passwordEncoder,
+                       JwtTokenService jwtTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtTokenService = jwtTokenService;
     }
 
     public boolean existsByUsername(String username) {
@@ -32,6 +36,9 @@ public class UserService {
     public User getUserByUsername(String username) {
         User user = userRepository.findByUsername(username).orElse(null);
         return user;
+    }
+    public User findUserByApiKey(String apiKey) {
+        return jwtTokenService.findUserByApikey(apiKey);
     }
 }
 

@@ -1,4 +1,4 @@
-package com.mobbScan_integration.MobbScan;
+package com.mobbScan_integration.MobbScan.Models;
 
 public enum ImageType {
     document_back,

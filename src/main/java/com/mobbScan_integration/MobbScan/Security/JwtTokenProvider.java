@@ -93,7 +93,6 @@ public String generateToken(Authentication authentication) {
                     .build()
                     .parseClaimsJws(token);
 
-            // Verificar si está en Mongo como válido
             return jwtTokenService.isTokenValid(token);
 
         } catch (io.jsonwebtoken.ExpiredJwtException ex) {

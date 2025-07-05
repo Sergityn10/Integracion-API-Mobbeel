@@ -2,7 +2,9 @@ package com.mobbScan_integration.MobbScan.Service;
 
 
 import com.mobbScan_integration.MobbScan.Models.JWTToken;
+import com.mobbScan_integration.MobbScan.Models.User;
 import com.mobbScan_integration.MobbScan.Repository.JwtTokenRepository;
+import jakarta.ws.rs.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -37,5 +39,10 @@ public class JwtTokenService {
             jwt.setValid(false);
             repository.save(jwt);
         });
+    }
+    public User findUserByApikey(String apikey){
+        JWTToken token = repository.findByToken(apikey).orElseThrow(() -> new NotFoundException("Tenant not found"));
+        return token.getUser();
+
     }
 }

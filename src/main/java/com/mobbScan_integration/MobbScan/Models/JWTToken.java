@@ -1,9 +1,16 @@
 package com.mobbScan_integration.MobbScan.Models;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Document(collection = "Tokens")
 public class JWTToken {
     @Id
@@ -15,51 +22,7 @@ public class JWTToken {
     private Date expiration;
     private boolean valid = true;
 
-    public String getId() {
-        return id;
-    }
+    @ManyToOne
+    private User user;
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Date getIssuedAt() {
-        return issuedAt;
-    }
-
-    public void setIssuedAt(Date issuedAt) {
-        this.issuedAt = issuedAt;
-    }
-
-    public Date getExpiration() {
-        return expiration;
-    }
-
-    public void setExpiration(Date expiration) {
-        this.expiration = expiration;
-    }
-
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void setValid(boolean valid) {
-        this.valid = valid;
-    }
 }

@@ -1,10 +1,10 @@
 package com.mobbScan_integration.MobbScan.Client;
 
 
-import com.mobbScan_integration.MobbScan.DTO.AcceptRequest;
-import com.mobbScan_integration.MobbScan.DTO.PendingRequest;
-import com.mobbScan_integration.MobbScan.DTO.RejectRequest;
-import com.mobbScan_integration.MobbScan.OnboardingRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.AcceptRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.PendingRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.RejectRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.OnboardingRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

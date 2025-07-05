@@ -1,4 +1,4 @@
-package com.mobbScan_integration.MobbScan;
+package com.mobbScan_integration.MobbScan.DTO.request;
 import java.util.Map;
 
 public class OnboardingRequest {

@@ -1,11 +1,13 @@
-package com.mobbScan_integration.MobbScan;
+package com.mobbScan_integration.MobbScan.controller;
 
 
+import com.mobbScan_integration.MobbScan.DTO.request.AuthRequest;
 import com.mobbScan_integration.MobbScan.Client.MobbScanClient;
-import com.mobbScan_integration.MobbScan.DTO.AcceptRequest;
-import com.mobbScan_integration.MobbScan.DTO.PendingRequest;
-import com.mobbScan_integration.MobbScan.DTO.RejectRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.AcceptRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.PendingRequest;
+import com.mobbScan_integration.MobbScan.DTO.request.RejectRequest;
 
+import com.mobbScan_integration.MobbScan.DTO.request.OnboardingRequest;
 import feign.RequestInterceptor;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

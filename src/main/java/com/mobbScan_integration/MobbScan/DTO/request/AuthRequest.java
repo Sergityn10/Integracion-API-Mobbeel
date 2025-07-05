@@ -1,4 +1,4 @@
-package com.mobbScan_integration.MobbScan;
+package com.mobbScan_integration.MobbScan.DTO.request;
 public class AuthRequest {
     private String api_key;
     private String api_secret;
