@@ -1,49 +1,37 @@
 version: "3.8"
 services:
-  mongo:
-    image: mongo:6.0
-    container_name: mobbscan-mongodb
-    restart: always
-    ports:
-      - "27017:27017"
+  carpooling-api-database:
+    image: mysql:8.4.0
+    restart: unless-stopped
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=************
+      - MYSQL_DATABASE=carpooling
+      - MYSQL_USER=gatewayuser
+      - MYSQL_PASSWORD=password
     volumes:
-      - mongo_data:/data/db
+      - ./dbdata:/var/lib/mysql
+    ports:
+      - "3308:3306"
     networks:
-      - mobbscan-network
+      - mobbscan-network         # <-- Aquí añadí la red
+
   api:
     build: .
-    container_name: mobbscan-api
+    container_name: carpooling-user
     ports:
-      - "8081:8080"
+      - "8081:8080"              # <-- Aquí corregí el puerto para que coincida con application.yml
     depends_on:
-      - mongo
-
+      - carpooling-api-database
     environment:
       - MONGODB_URI=${SPRING_DATA_MONGODB_URI}
       - MOBBSCAN_API_KEY=${MOBBSCAN_API_KEY}
+      - SPRING_DATASOURCE_USERNAME=gatewayuser
+      - SPRING_DATASOURCE_PASSWORD=password
       - MOBBSCAN_API_SECRET=${MOBBSCAN_API_SECRET}
       - MOBBSCAN_API_GATEWAY=${MOBBSCAN_API_GATEWAY}
     networks:
       - mobbscan-network
-
-  mongo-express:
-    image: mongo-express
-    container_name: mobbscan-mongo-express
-    restart: always
-    ports:
-      - "8083:8081"
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_PORT=27017
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin
-    depends_on:
-      - mongo
-    networks:
-      - mobbscan-network
-
-volumes:
-  mongo_data:
 
 networks:
   mobbscan-network:

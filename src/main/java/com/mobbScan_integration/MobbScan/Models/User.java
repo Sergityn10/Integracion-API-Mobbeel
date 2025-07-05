@@ -1,31 +1,35 @@
 package com.mobbScan_integration.MobbScan.Models;
 
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.OneToMany;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Document(collection = "users")
+import jakarta.persistence.*;
+import java.util.Set;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Data
+@Table(name = "users")
 public class User {
-    @Id
-    private String id;
 
-    private String username;
-    private String password; // Encriptada
+     @Id
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+     private Long id;
 
-    public User() {}
+    @Column(nullable = false, length = 150)
+    private String username;               // único gracias al UniqueConstraint
 
-    public User(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
+    @Column(nullable = false, length = 250)
+    private String password;               // almacena el hash (bcrypt u otro)
 
-    // Getters y setters
-    public String getId() { return id; }
+    @OneToMany
+    private Set<JWTToken> apiKeys;
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
 }
 

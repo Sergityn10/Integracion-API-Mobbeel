@@ -1,6 +1,9 @@
 package com.mobbScan_integration.MobbScan.Security;
 
+import com.mobbScan_integration.MobbScan.Models.User;
+import com.mobbScan_integration.MobbScan.Repository.UserRepository;
 import com.mobbScan_integration.MobbScan.Service.JwtTokenService;
+import com.mobbScan_integration.MobbScan.Service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -39,6 +42,8 @@ public class JwtTokenProvider {
     @Autowired
     private JwtTokenService jwtTokenService;
 
+    @Autowired
+    private UserService userService;
     @PostConstruct
     public void init() {
         // Esta es la forma recomendada de generar una SecretKey a partir de tu string secreto
@@ -72,6 +77,7 @@ public String generateToken(Authentication authentication) {
     Date now = new Date();
     Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
+    User user = userService.getUserByUsername(userPrincipal.getUsername());
     String jwt = Jwts.builder()
             .setSubject(userPrincipal.getUsername())
             .setIssuer(jwtIssuer)
@@ -80,7 +86,7 @@ public String generateToken(Authentication authentication) {
             .signWith(SignatureAlgorithm.HS512, jwtSecretKey)
             .compact();
 
-    jwtTokenService.saveToken(jwt, userPrincipal.getUsername(), now, expiryDate);
+    jwtTokenService.saveToken(jwt, user, now, expiryDate);
 
     return jwt;
 }

@@ -95,7 +95,7 @@ public class AuthController {
 
         // 3) Obtener el username tanto del JWT como de la entidad (por seguridad)
         String usernameFromToken = tokenProvider.getUsernameFromJWT(token);
-        String usernameFromEntity = jwtEntity.getUsername();
+        String usernameFromEntity = jwtEntity.getUser().getUsername();
         if (!usernameFromToken.equals(usernameFromEntity)) {
             // Los datos no coinciden: posible manipulación
             return ResponseEntity

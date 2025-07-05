@@ -1,65 +1,39 @@
 package com.mobbScan_integration.MobbScan.Models;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import jakarta.persistence.*;
 import java.util.Date;
 
-@Document(collection = "Tokens")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "apikeys")
 public class JWTToken {
     @Id
-    private String id;
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+     private Long id;
 
+    @Column(nullable = false, unique = true, length = 500)
     private String token;
-    private String username;
+
+    /**
+     * Lo ideal es referenciar al usuario con @ManyToOne.
+     * Mientras migras, puede seguir como String:
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "issued_at", nullable = false)
     private Date issuedAt;
+
+    @Column(nullable = false)
     private Date expiration;
+
+    @Column(nullable = false)
     private boolean valid = true;
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Date getIssuedAt() {
-        return issuedAt;
-    }
-
-    public void setIssuedAt(Date issuedAt) {
-        this.issuedAt = issuedAt;
-    }
-
-    public Date getExpiration() {
-        return expiration;
-    }
-
-    public void setExpiration(Date expiration) {
-        this.expiration = expiration;
-    }
-
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void setValid(boolean valid) {
-        this.valid = valid;
-    }
 }
