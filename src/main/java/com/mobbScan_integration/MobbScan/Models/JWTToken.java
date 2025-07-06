@@ -1,28 +1,39 @@
 package com.mobbScan_integration.MobbScan.Models;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
+import jakarta.persistence.*;
 import java.util.Date;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "Tokens")
+@Entity
+@Table(name = "apikeys")
 public class JWTToken {
     @Id
-    private String id;
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+     private Long id;
 
+    @Column(nullable = false, unique = true, length = 500)
     private String token;
-    private String username;
-    private Date issuedAt;
-    private Date expiration;
-    private boolean valid = true;
 
-    @ManyToOne
+    /**
+     * Lo ideal es referenciar al usuario con @ManyToOne.
+     * Mientras migras, puede seguir como String:
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "issued_at", nullable = false)
+    private Date issuedAt;
+
+    @Column(nullable = false)
+    private Date expiration;
+
+    @Column(nullable = false)
+    private boolean valid = true;
 
 }

@@ -1,7 +1,7 @@
 server:
-  port: 8081
+  port: 8080
   servlet:
-    context-path: /resource-server
+    context-path: /
 
 spring:
   jpa:
@@ -12,3 +12,29 @@ spring:
         jwt:
           issuer-uri: http://localhost:8083/auth/realms/baeldung
           jwk-set-uri: http://localhost:8083/auth/realms/baeldung/protocol/openid-connect/certs
+
+  datasource:
+    url: jdbc:mysql://carpooling-api-database:3306/carpooling?useSSL=false&allowPublicKeyRetrieval=true
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+    jpa:
+      hibernate:
+        ddl-auto: update                  # dev: update | test: validate | prod: none
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.MySQLDialect
+          format_sql: true
+      open-in-view: false
+
+    sql:
+      init:
+        mode: never                       # usa Flyway/Liquibase en lugar de schema.sql
+
+  logging:
+    level:
+      org.hibernate.SQL: INFO

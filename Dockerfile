@@ -1,44 +1,38 @@
-## Usa una imagen oficial de JDK como base
-#FROM eclipse-temurin:17-jdk
-#
-## Crea un directorio de trabajo
-#WORKDIR /app
-#
-## Copia el jar generado (ajusta si tu jar tiene otro nombre)
-#COPY target/MobbScan-0.0.1-SNAPSHOT.jar app.jar
-#
-## Expone el puerto de la aplicación
-#EXPOSE 8082
-#
-## Ejecuta la aplicación
-#ENTRYPOINT ["java", "-jar", "app.jar"]
-
-# Etapa 1: Construcción
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
-
-WORKDIR /app
-
-# Copiar pom.xml y descargar dependencias por separado
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copiar el resto del código
-COPY . .
-
-# Compilar el proyecto sin tests
-RUN mvn clean package -DskipTests
-
-# Etapa 2: Imagen de producción
 FROM eclipse-temurin:17-jdk-jammy
 
-# Crear directorio para el app
+#WORKDIR /app
+#
+## Instalar netcat para wait-for-it.sh
+#RUN apt-get update && apt-get install -y netcat && rm -rf /var/lib/apt/lists/*
+#
+## Copiar el script wait-for-it.sh
+#COPY wait-for-it.sh wait-for-it.sh
+#
+## Dar permisos de ejecución al script
+#RUN chmod +x wait-for-it.sh
+#
+## Copiamos el JAR generado al contenedor
+## (ajusta el nombre si tu .jar no se llama app.jar)
+#COPY target/*.jar app.jar
+#
+## Expone el puerto en el que escucha tu aplicación Spring Boot
+## Cambia 8080 si tu server.port es distinto
+#EXPOSE 8081
+#
+#
+## Esperar a MySQL antes de arrancar la app
+#ENTRYPOINT ["./wait-for-it.sh", "carpooling-api-database2", "3306", "--", "java", "-jar", "app.jar"]
+
+# Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiar el .jar desde el builder
-COPY --from=builder /app/target/*.jar app.jar
+# Copiamos el JAR generado al contenedor
+# (ajusta el nombre si tu .jar no se llama app.jar)
+COPY target/*.jar app.jar
 
-# Puerto expuesto por la app (usa 8082 porque así está configurado en application.properties)
-EXPOSE 8082
+# Expone el puerto en el que escucha tu aplicación Spring Boot
+# Cambia 8080 si tu server.port es distinto
+EXPOSE 8080
 
-# Iniciar el contenedor
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Comando por defecto: ejecutar la aplicación
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

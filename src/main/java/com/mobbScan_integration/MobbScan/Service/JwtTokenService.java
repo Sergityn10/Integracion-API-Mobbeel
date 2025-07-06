@@ -4,9 +4,10 @@ package com.mobbScan_integration.MobbScan.Service;
 import com.mobbScan_integration.MobbScan.Models.JWTToken;
 import com.mobbScan_integration.MobbScan.Models.User;
 import com.mobbScan_integration.MobbScan.Repository.JwtTokenRepository;
-import jakarta.ws.rs.NotFoundException;
+import com.mobbScan_integration.MobbScan.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -18,10 +19,10 @@ public class JwtTokenService {
         this.repository = repository;
     }
 
-    public void saveToken(String token, String username, Date issuedAt, Date expiration) {
+    public void saveToken(String token, User username, Date issuedAt, Date expiration) {
         JWTToken jwt = new JWTToken();
         jwt.setToken(token);
-        jwt.setUsername(username);
+        jwt.setUser(username);
         jwt.setIssuedAt(issuedAt);
         jwt.setExpiration(expiration);
         jwt.setValid(true);

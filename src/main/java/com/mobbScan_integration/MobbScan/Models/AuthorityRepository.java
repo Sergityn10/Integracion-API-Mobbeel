@@ -1,10 +1,9 @@
 package com.mobbScan_integration.MobbScan.Models;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-
+import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
-public interface AuthorityRepository extends MongoRepository<Authority, AuthorityId> {
+public interface AuthorityRepository extends JpaRepository<Authority, AuthorityId> {
 
     List<Authority> findByUserUsername(String username);
 

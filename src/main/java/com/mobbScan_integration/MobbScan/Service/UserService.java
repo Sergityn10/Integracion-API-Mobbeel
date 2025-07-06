@@ -30,7 +30,10 @@ public class UserService {
 
     public void saveUser(String username, String rawPassword) {
         String encoded = passwordEncoder.encode(rawPassword);
-        userRepository.save(new User(username, encoded));
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(encoded);
+        userRepository.save(user);
     }
 
     public User getUserByUsername(String username) {

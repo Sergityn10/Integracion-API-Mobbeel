@@ -1,17 +1,15 @@
 package com.mobbScan_integration.MobbScan.Models;
 
+import com.mobbScan_integration.MobbScan.Models.AuthorityId;
+import com.mobbScan_integration.MobbScan.Models.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 @Entity
-@Document(collection = "authorities")              // ← Nombre de la colección
-@CompoundIndex(name = "username_authority_uq",     // ← Nombre del índice (opcional)
-        def = "{'username': 1, 'authority': 1}",
-        unique = true)
+@Table(name = "authorities",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"username", "authority"}) )
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,9 +18,15 @@ public class Authority {
     @EmbeddedId
     private AuthorityId id;
 
-//    @MapsId("username")
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    public User user;
+    @MapsId("username")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "username",
+            nullable = false,
+            referencedColumnName = "username",
+            foreignKey = @ForeignKey(name = "FK_authorities_users")
+    )
+    private User user;
 
 
 
